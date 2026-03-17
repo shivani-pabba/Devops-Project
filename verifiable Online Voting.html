@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VMV — Verify My Vote</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&family=Fraunces:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:    #07090f;
+  --deep:   #0b0e18;
+  --base:   #0f1422;
+  --surf:   #141c30;
+  --surf2:  #1b2540;
+  --edge:   rgba(255,255,255,0.07);
+  --edge2:  rgba(255,255,255,0.13);
+  --cyan:   #00e5c8;
+  --cyan2:  #00b8a3;
+  --cyan-d: rgba(0,229,200,0.10);
+  --violet: #7c6ef7;
+  --vio-d:  rgba(124,110,247,0.12);
+  --amber:  #f5a623;
+  --amb-d:  rgba(245,166,35,0.12);
+  --red:    #e8445a;
+  --red-d:  rgba(232,68,90,0.12);
+  --green:  #22d08a;
+  --grn-d:  rgba(34,208,138,0.10);
+  --txt:    #c8d4f0;
+  --muted:  #4a5a7a;
+  --dim:    #2a3550;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--ink);}
+body{font-family:'Space Grotesk',sans-serif;color:var(--txt);}
+
+/* ── GRID BG ── */
+.bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(0,229,200,0.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,200,0.025) 1px,transparent 1px);
+  background-size:52px 52px;}
+.bg-rays{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 50% at 10% 0%,rgba(0,229,200,0.05) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 60% at 90% 100%,rgba(124,110,247,0.06) 0%,transparent 60%);}
+
+/* ── PAGES ── */
+.page{display:none;position:fixed;inset:0;z-index:1;overflow:hidden;flex-direction:column;}
+.page.on{display:flex;}
+
+/* ══════════════════════════════
+   LOGIN
+══════════════════════════════ */
+#pg-login{align-items:center;justify-content:center;}
+
+.login-shell{
+  display:grid;grid-template-columns:1fr 420px;
+  width:100%;max-width:1080px;
+  height:100vh;padding:0 44px;align-items:center;gap:0;
+  position:relative;z-index:1;
+}
+
+/* Hero left */
+.lhero{}
+.vmv-badge{
+  display:inline-flex;align-items:center;gap:9px;
+  padding:5px 14px 5px 8px;
+  border:1px solid rgba(0,229,200,0.2);
+  border-radius:100px;background:var(--cyan-d);
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--cyan);margin-bottom:26px;
+}
+.vmv-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.lhero-title{
+  font-family:'Fraunces',serif;
+  font-size:clamp(2.6rem,4.2vw,4rem);
+  font-weight:700;line-height:1.08;
+  color:#fff;margin-bottom:18px;letter-spacing:-0.02em;
+}
+.lhero-title em{font-style:italic;color:var(--cyan);}
+.lhero-desc{font-size:14px;color:var(--muted);line-height:1.8;max-width:400px;margin-bottom:32px;font-weight:300;}
+
+.proto-pills{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:36px;}
+.pill{
+  padding:5px 12px;border-radius:5px;
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  letter-spacing:0.1em;text-transform:uppercase;
+  border:1px solid var(--edge);color:var(--muted);background:var(--surf);
+  transition:all 0.2s;cursor:default;
+}
+.pill:hover{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-d);}
+.pill.hi{border-color:rgba(0,229,200,0.25);color:var(--cyan);background:var(--cyan-d);}
+
+.trust-row{display:flex;gap:28px;}
+.trust-stat{border-left:2px solid var(--cyan);padding-left:12px;}
+.ts-n{font-family:'Fraunces',serif;font-size:1.9rem;font-weight:700;color:#fff;line-height:1;}
+.ts-n sub{font-size:0.75rem;color:var(--cyan);font-family:'JetBrains Mono',monospace;}
+.ts-l{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:0.08em;margin-top:3px;}
+
+/* Login card */
+.lcard{
+  background:rgba(20,28,48,0.85);
+  backdrop-filter:blur(24px);
+  border:1px solid var(--edge2);
+  border-radius:18px;padding:34px;
+  position:relative;overflow:hidden;
+  animation:slideIn 0.65s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+.lcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--cyan),var(--violet),transparent);}
+.lcard::after{content:'';position:absolute;width:240px;height:240px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,229,200,0.05) 0%,transparent 70%);
+  top:-80px;right:-80px;pointer-events:none;}
+
+.lcard-brand{display:flex;align-items:center;gap:10px;margin-bottom:26px;}
+.brand-hex{
+  width:38px;height:38px;
+  background:linear-gradient(135deg,var(--cyan),var(--cyan2));
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:#000;
+}
+.brand-txt .bn{font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:#fff;}
+.brand-txt .bs{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:0.06em;}
+
+.ct{font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:#fff;margin-bottom:4px;}
+.cs{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:22px;letter-spacing:0.06em;}
+
+/* Role selector */
+.role-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;
+  background:rgba(0,0,0,0.4);border:1px solid var(--edge);
+  border-radius:9px;padding:3px;margin-bottom:20px;}
+.rtab{padding:7px 4px;border-radius:7px;font-size:10px;
+  font-family:'JetBrains Mono',monospace;letter-spacing:0.07em;text-transform:uppercase;
+  text-align:center;cursor:pointer;color:var(--muted);border:none;background:transparent;
+  transition:all 0.2s;}
+.rtab.on{background:linear-gradient(135deg,rgba(0,229,200,0.15),rgba(0,229,200,0.05));
+  color:var(--cyan);border:1px solid rgba(0,229,200,0.25);}
+
+.fg{margin-bottom:13px;}
+.fl{display:block;font-size:9px;font-family:'JetBrains Mono',monospace;
+  text-transform:uppercase;letter-spacing:0.14em;color:var(--muted);margin-bottom:5px;}
+.fi{width:100%;padding:10px 13px;background:rgba(0,0,0,0.4);
+  border:1px solid var(--edge);border-radius:8px;
+  color:var(--txt);font-size:13px;font-family:'Space Grotesk',sans-serif;
+  transition:all 0.2s;outline:none;}
+.fi:focus{border-color:rgba(0,229,200,0.45);box-shadow:0 0 0 3px rgba(0,229,200,0.07);}
+.fi::placeholder{color:var(--muted);}
+select.fi option{background:var(--surf);}
+
+/* Tracker input */
+.tracker-hint{
+  display:flex;align-items:center;gap:8px;padding:9px 12px;
+  background:rgba(124,110,247,0.06);border:1px solid rgba(124,110,247,0.2);
+  border-radius:7px;font-size:10px;color:var(--muted);
+  font-family:'JetBrains Mono',monospace;margin-bottom:12px;
+}
+.th-ico{color:var(--violet);flex-shrink:0;}
+
+.btn-auth{
+  width:100%;padding:12px;margin-top:6px;
+  background:linear-gradient(135deg,var(--cyan) 0%,var(--cyan2) 100%);
+  border:none;border-radius:9px;color:#07090f;
+  font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;
+  cursor:pointer;letter-spacing:0.04em;
+  box-shadow:0 4px 22px rgba(0,229,200,0.28);
+  transition:all 0.25s;
+}
+.btn-auth:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(0,229,200,0.38);}
+.btn-auth:active{transform:translateY(0);}
+
+.enc-bar{display:flex;align-items:center;gap:7px;margin-top:11px;
+  padding:9px 11px;background:rgba(0,0,0,0.25);
+  border:1px solid var(--edge);border-radius:7px;
+  font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+.enc-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;animation:blink 2s infinite;}
+
+/* ══════════════════════════════
+   LOADING
+══════════════════════════════ */
+#pg-loading{align-items:center;justify-content:center;}
+.load-ring{
+  width:52px;height:52px;
+  border:1.5px solid rgba(0,229,200,0.12);
+  border-top-color:var(--cyan);
+  border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:18px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-brand{font-family:'Fraunces',serif;font-size:20px;color:#fff;margin-bottom:6px;text-align:center;}
+.load-msg{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:0.12em;text-align:center;}
+.load-prog{width:180px;height:1px;background:rgba(255,255,255,0.06);border-radius:99px;margin-top:18px;overflow:hidden;}
+.load-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--cyan),var(--violet));border-radius:99px;transition:width 0.5s ease;}
+
+/* ══════════════════════════════
+   TOPBAR
+══════════════════════════════ */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:11px 26px;
+  background:rgba(7,9,15,0.92);backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--edge);flex-shrink:0;z-index:10;
+}
+.tb-l{display:flex;align-items:center;gap:20px;}
+.tb-brand{display:flex;align-items:center;gap:9px;}
+.tb-hex{
+  width:28px;height:28px;
+  background:linear-gradient(135deg,var(--cyan),var(--cyan2));
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#000;
+}
+.tb-name{font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:#fff;}
+.tb-nav{display:flex;gap:2px;}
+.tnav{padding:6px 13px;border-radius:7px;font-size:12px;cursor:pointer;
+  color:var(--muted);border:none;background:transparent;
+  font-family:'Space Grotesk',sans-serif;transition:all 0.2s;}
+.tnav:hover{background:rgba(255,255,255,0.04);color:var(--txt);}
+.tnav.on{background:var(--cyan-d);color:var(--cyan);border:1px solid rgba(0,229,200,0.18);}
+.tb-r{display:flex;align-items:center;gap:10px;}
+.live-chip{display:flex;align-items:center;gap:5px;padding:4px 11px;
+  border-radius:20px;font-size:10px;font-family:'JetBrains Mono',monospace;
+  background:rgba(34,208,138,0.08);border:1px solid rgba(34,208,138,0.2);color:var(--green);}
+.voter-av{
+  width:30px;height:30px;border-radius:50%;
+  background:linear-gradient(135deg,var(--violet),#5045c0);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:#fff;font-family:'JetBrains Mono',monospace;
+}
+.btn-out{padding:6px 13px;border:1px solid var(--edge);border-radius:7px;
+  background:transparent;font-size:11px;cursor:pointer;
+  color:var(--muted);font-family:'Space Grotesk',sans-serif;transition:all 0.2s;}
+.btn-out:hover{border-color:var(--red);color:var(--red);}
+
+/* ══════════════════════════════
+   DASHBOARD
+══════════════════════════════ */
+#pg-dash{background:var(--deep);}
+.dbody{flex:1;overflow-y:auto;padding:22px 26px 32px;
+  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.06) transparent;}
+.dbody::-webkit-scrollbar{width:3px;}
+.dbody::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:99px;}
+
+.sec-ey{font-size:9px;font-family:'JetBrains Mono',monospace;
+  text-transform:uppercase;letter-spacing:0.18em;color:var(--cyan);margin-bottom:4px;}
+.sec-ti{font-family:'Fraunces',serif;font-size:24px;font-weight:700;
+  color:#fff;margin-bottom:20px;letter-spacing:-0.01em;}
+.sec-ti span{color:var(--cyan);font-style:italic;}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px;}
+.kpi{background:var(--surf);border:1px solid var(--edge);border-radius:13px;
+  padding:16px;position:relative;overflow:hidden;
+  animation:fadeUp 0.5s ease both;transition:transform 0.2s,border-color 0.2s;}
+.kpi:hover{transform:translateY(-2px);border-color:var(--edge2);}
+.kpi:nth-child(2){animation-delay:.06s}.kpi:nth-child(3){animation-delay:.12s}.kpi:nth-child(4){animation-delay:.18s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.kc::before{background:linear-gradient(90deg,var(--cyan),transparent);}
+.kv::before{background:linear-gradient(90deg,var(--violet),transparent);}
+.ka::before{background:linear-gradient(90deg,var(--amber),transparent);}
+.kg::before{background:linear-gradient(90deg,var(--green),transparent);}
+.kpi-glow{position:absolute;width:70px;height:70px;border-radius:50%;
+  bottom:-25px;right:-15px;opacity:0.25;filter:blur(20px);}
+.kc .kpi-glow{background:var(--cyan)}.kv .kpi-glow{background:var(--violet)}
+.ka .kpi-glow{background:var(--amber)}.kg .kpi-glow{background:var(--green)}
+.kl{font-size:9px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;
+  letter-spacing:0.1em;color:var(--muted);margin-bottom:6px;}
+.kn{font-family:'Fraunces',serif;font-size:30px;font-weight:700;line-height:1;margin-bottom:3px;}
+.kc .kn{color:var(--cyan)}.kv .kn{color:var(--violet)}
+.ka .kn{color:var(--amber)}.kg .kn{color:var(--green)}
+.ks{font-size:10px;color:var(--muted);}
+
+/* Panels */
+.g2{display:grid;grid-template-columns:1fr 300px;gap:14px;margin-bottom:14px;}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:14px;}
+.g4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:14px;}
+.panel{background:var(--surf);border:1px solid var(--edge);border-radius:15px;
+  padding:18px;animation:fadeUp 0.5s ease both;}
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.pt{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:#fff;}
+.ptag{font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--muted);
+  padding:3px 8px;background:rgba(255,255,255,0.04);border:1px solid var(--edge);
+  border-radius:4px;letter-spacing:0.07em;}
+
+/* Protocol timeline */
+.proto-step{display:flex;gap:12px;align-items:flex-start;
+  padding:11px;background:var(--surf2);border:1px solid var(--edge);
+  border-radius:9px;margin-bottom:7px;transition:border-color 0.2s;}
+.proto-step:hover{border-color:rgba(0,229,200,0.2);}
+.ps-num{
+  width:26px;height:26px;border-radius:6px;flex-shrink:0;
+  background:var(--cyan-d);border:1px solid rgba(0,229,200,0.2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--cyan);margin-top:1px;
+}
+.ps-t{font-size:11px;font-weight:600;color:var(--txt);margin-bottom:2px;}
+.ps-d{font-size:10px;color:var(--muted);line-height:1.5;}
+.ps-badge{font-size:9px;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;
+  margin-left:auto;flex-shrink:0;margin-top:1px;}
+.done{background:var(--grn-d);color:var(--green);}
+.prog{background:var(--cyan-d);color:var(--cyan);}
+.pend{background:rgba(255,255,255,0.04);color:var(--muted);}
+
+/* Tracker verify */
+.tracker-card{background:var(--surf2);border:1px solid rgba(0,229,200,0.15);
+  border-radius:12px;padding:16px;margin-bottom:10px;}
+.tc-label{font-size:9px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;
+  letter-spacing:0.12em;color:var(--muted);margin-bottom:6px;}
+.tc-val{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;
+  color:var(--cyan);letter-spacing:0.08em;margin-bottom:8px;}
+.tc-vote{display:flex;align-items:center;gap:8px;font-size:12px;}
+.tc-vote-lbl{color:var(--muted);}
+.tc-vote-val{color:var(--green);font-weight:600;}
+.verify-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:5px;
+  font-size:9px;font-family:'JetBrains Mono',monospace;
+  background:var(--grn-d);border:1px solid rgba(34,208,138,0.2);color:var(--green);
+}
+
+/* WBB entries */
+.wbb-entry{display:flex;gap:10px;align-items:flex-start;
+  padding:10px;background:var(--surf2);border:1px solid var(--edge);
+  border-radius:8px;margin-bottom:6px;}
+.wbb-hash{font-family:'JetBrains Mono',monospace;font-size:9px;
+  color:var(--cyan);word-break:break-all;flex:1;line-height:1.6;}
+.wbb-meta{font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;
+  flex-shrink:0;text-align:right;}
+.wbb-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+
+/* Mix-net nodes */
+.node-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.node-card{background:var(--surf2);border:1px solid var(--edge);border-radius:9px;padding:12px;}
+.nc-name{font-size:11px;font-weight:600;color:var(--txt);margin-bottom:4px;}
+.nc-org{font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:8px;}
+.nc-stats{display:flex;flex-direction:column;gap:4px;}
+.nc-s{display:flex;justify-content:space-between;font-size:10px;}
+.nc-sl{color:var(--muted);}
+.nc-sv{font-family:'JetBrains Mono',monospace;font-size:9px;}
+
+/* Activity */
+.act-list{display:flex;flex-direction:column;gap:10px;}
+.act-item{display:flex;gap:9px;align-items:flex-start;}
+.act-dot{width:7px;height:7px;border-radius:50%;margin-top:4px;flex-shrink:0;}
+.act-t{font-size:11px;font-weight:500;color:var(--txt);margin-bottom:2px;}
+.act-m{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+
+/* Bars */
+.vbar{margin-bottom:11px;}
+.vbar-top{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;}
+.vbar-n{color:var(--txt);}
+.vbar-v{font-family:'JetBrains Mono',monospace;color:var(--muted);font-size:10px;}
+.vbar-track{height:5px;background:rgba(255,255,255,0.05);border-radius:99px;overflow:hidden;}
+.vbar-fill{height:100%;border-radius:99px;transition:width 1.4s cubic-bezier(0.16,1,0.3,1);}
+
+/* Status badges */
+.sbadge{font-size:9px;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-weight:600;}
+.s-ok{background:var(--grn-d);color:var(--green);}
+.s-pending{background:var(--cyan-d);color:var(--cyan);}
+.s-warn{background:var(--amb-d);color:var(--amber);}
+.s-err{background:var(--red-d);color:var(--red);}
+
+/* Voter list table */
+.vtable{width:100%;border-collapse:collapse;table-layout:fixed;}
+.vtable th{font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--muted);
+  text-align:left;padding:0 0 10px;border-bottom:1px solid var(--edge);
+  text-transform:uppercase;letter-spacing:0.1em;}
+.vtable td{padding:9px 0;font-size:11px;border-bottom:1px solid var(--edge);vertical-align:middle;}
+.vtable tr:last-child td{border-bottom:none;}
+.vname{font-weight:500;color:var(--txt);margin-bottom:1px;}
+.vpid{font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+.vtracker{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--cyan);}
+
+/* Roadmap */
+.road-item{
+  display:flex;gap:12px;align-items:flex-start;
+  padding:12px;border-radius:10px;margin-bottom:8px;
+  border:1px solid var(--edge);background:var(--surf2);transition:all 0.2s;
+}
+.road-item:hover{border-color:rgba(0,229,200,0.15);}
+.road-step{
+  width:28px;height:28px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;
+  margin-top:1px;
+}
+.rs-done{background:var(--grn-d);border:1px solid rgba(34,208,138,0.3);color:var(--green);}
+.rs-curr{background:var(--cyan-d);border:1px solid rgba(0,229,200,0.35);color:var(--cyan);}
+.rs-next{background:rgba(255,255,255,0.04);border:1px solid var(--edge);color:var(--muted);}
+.road-t{font-size:12px;font-weight:600;color:var(--txt);margin-bottom:3px;}
+.road-d{font-size:10px;color:var(--muted);line-height:1.5;}
+
+/* Modal */
+.modal-overlay{display:none;position:absolute;inset:0;
+  background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);
+  align-items:center;justify-content:center;z-index:50;}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--surf);border:1px solid var(--edge2);
+  border-radius:18px;padding:30px;max-width:330px;width:90%;
+  text-align:center;position:relative;overflow:hidden;animation:slideIn 0.28s ease both;}
+.modal::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--red),transparent);}
+.modal-ico{font-size:28px;margin-bottom:10px;}
+.modal-t{font-family:'Fraunces',serif;font-size:20px;font-weight:700;
+  color:#fff;margin-bottom:8px;letter-spacing:-0.01em;}
+.modal-d{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:20px;}
+.modal-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.btn-stay{padding:10px;border:1px solid var(--edge);border-radius:8px;
+  background:transparent;font-size:13px;cursor:pointer;color:var(--txt);
+  font-family:'Space Grotesk',sans-serif;transition:all 0.2s;}
+.btn-stay:hover{background:rgba(255,255,255,0.03);}
+.btn-exit{padding:10px;border:none;border-radius:8px;
+  background:linear-gradient(135deg,var(--red),#c0001e);
+  color:#fff;font-size:13px;cursor:pointer;
+  font-family:'Space Grotesk',sans-serif;font-weight:700;transition:all 0.2s;}
+.btn-exit:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(232,68,90,0.35);}
+
+/* Toast */
+.toast{position:fixed;bottom:22px;right:22px;z-index:999;
+  display:flex;align-items:center;gap:9px;padding:11px 16px;
+  background:rgba(11,14,24,0.96);backdrop-filter:blur(14px);
+  border:1px solid var(--edge2);border-radius:10px;font-size:12px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  transform:translateY(80px);opacity:0;
+  transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);flex-shrink:0;}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-rays"></div>
+
+<!-- ════════ LOGIN ════════ -->
+<div id="pg-login" class="page on">
+  <div class="login-shell">
+    <div class="lhero">
+      <div class="vmv-badge"><div class="vmv-badge-dot"></div>IEEE TDSC 2024 · Surrey CES VMV</div>
+      <h1 class="lhero-title">End-to-End<br><em>Verifiable</em><br>Online Voting</h1>
+      <p class="lhero-desc">VMV ("Verify My Vote") adds Selene verifiability to the CES commercial election system. Voters can independently confirm their vote is recorded correctly, without trusting the election provider.</p>
+      <div class="proto-pills">
+        <div class="pill hi">Selene Protocol</div>
+        <div class="pill hi">ElGamal Encryption</div>
+        <div class="pill">Mix-net (Verificatum)</div>
+        <div class="pill">Quorum DLT / WBB</div>
+        <div class="pill">NIZKPoK Proofs</div>
+        <div class="pill">Tracker Verification</div>
+        <div class="pill">HTTPS + DSA Sign</div>
+      </div>
+      <div class="trust-row">
+        <div class="trust-stat"><div class="ts-n">4M<sub>+</sub></div><div class="ts-l">Voters · CES / year</div></div>
+        <div class="trust-stat"><div class="ts-n">42<sub>%</sub></div><div class="ts-l">Electronic ballots</div></div>
+        <div class="trust-stat"><div class="ts-n">5</div><div class="ts-l">Roadmap steps</div></div>
+      </div>
+    </div>
+
+    <div class="lcard">
+      <div class="lcard-brand">
+        <div class="brand-hex">VMV</div>
+        <div class="brand-txt">
+          <div class="bn">Verify My Vote</div>
+          <div class="bs">Civica Election Services · VMV Demonstrator</div>
+        </div>
+      </div>
+      <div class="ct">Voter Sign In</div>
+      <div class="cs">Authenticate to verify your ballot</div>
+
+      <div class="role-tabs">
+        <button class="rtab on" onclick="switchRole('voter',this)">Voter</button>
+        <button class="rtab" onclick="switchRole('admin',this)">Admin</button>
+        <button class="rtab" onclick="switchRole('auditor',this)">Auditor</button>
+      </div>
+
+      <div id="f-voter">
+        <div class="fg"><label class="fl">Full Name</label><input class="fi" type="text" id="inp-name" value="Alice Pemberton" placeholder="Your registered name"></div>
+        <div class="fg"><label class="fl">Voter Credential / ID</label><input class="fi" type="text" id="inp-cred" value="CES-2024-48291" placeholder="Issued by CES via email"></div>
+        <div class="fg"><label class="fl">Election</label>
+          <select class="fi">
+            <option>RCN West Midlands Rep · Aug 2019</option>
+            <option>College of Podiatrists · Oct 2019</option>
+            <option>Surrey CS Dept Rep · Jun 2019</option>
+          </select>
+        </div>
+        <div class="tracker-hint">
+          <span class="th-ico">🔑</span>
+          <span>Your β commitment was sent with your credentials. Keep it private until after the election.</span>
+        </div>
+      </div>
+
+      <div id="f-admin" style="display:none">
+        <div class="fg"><label class="fl">Administrator ID</label><input class="fi" type="text" value="VMV-ADM-001"></div>
+        <div class="fg"><label class="fl">Password</label><input class="fi" type="password" value="selene@admin2024"></div>
+        <div class="fg"><label class="fl">Selene Layer Node</label>
+          <select class="fi"><option>CES Network · London DC1</option><option>UoS Node · Surrey Campus</option><option>AWS Node · EU-West</option></select>
+        </div>
+      </div>
+
+      <div id="f-auditor" style="display:none">
+        <div class="fg"><label class="fl">Organisation</label><input class="fi" type="text" value="University of Surrey" placeholder="Auditing organisation"></div>
+        <div class="fg"><label class="fl">Audit Access Token</label><input class="fi" type="text" value="AUDIT-TKN-8829A" placeholder="Issued by election authority"></div>
+        <div class="fg"><label class="fl">Scope</label>
+          <select class="fi"><option>Universal Verifiability · WBB only</option><option>Full Audit · NIZKPoK + WBB</option></select>
+        </div>
+      </div>
+
+      <button class="btn-auth" onclick="doLogin()">🔐 Authenticate &amp; Proceed</button>
+      <div class="enc-bar"><div class="enc-dot"></div><span>TLS 1.3 · ElGamal Encrypted · DSA Signed · GDPR Compliant</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ LOADING ════════ -->
+<div id="pg-loading" class="page" style="align-items:center;justify-content:center;">
+  <div class="load-ring"></div>
+  <div class="load-brand">VMV · Verify My Vote</div>
+  <div class="load-msg" id="load-msg">Authenticating credentials...</div>
+  <div class="load-prog"><div class="load-fill" id="load-fill"></div></div>
+</div>
+
+<!-- ════════ DASHBOARD ════════ -->
+<div id="pg-dash" class="page" style="position:relative;">
+  <div class="topbar">
+    <div class="tb-l">
+      <div class="tb-brand"><div class="tb-hex">VMV</div><div class="tb-name">Verify My Vote</div></div>
+      <div class="tb-nav">
+        <button class="tnav on" onclick="switchSec('overview')">Overview</button>
+        <button class="tnav" onclick="switchSec('verify')">Verify Vote</button>
+        <button class="tnav" onclick="switchSec('mixnet')">Mix-net</button>
+        <button class="tnav" onclick="switchSec('wbb')">Bulletin Board</button>
+        <button class="tnav" onclick="switchSec('roadmap')">Roadmap</button>
+      </div>
+    </div>
+    <div class="tb-r">
+      <div class="live-chip"><div class="vmv-badge-dot"></div>Election Active</div>
+      <div class="voter-av" id="tb-av">AP</div>
+      <button class="btn-out" onclick="showModal()">↩ Logout</button>
+    </div>
+  </div>
+
+  <div class="dbody">
+
+    <!-- ── OVERVIEW ── -->
+    <div id="s-overview" class="dsec">
+      <div class="sec-ey">VMV Demonstrator · CES Commercial System</div>
+      <div class="sec-ti">Welcome, <span id="disp-name">Alice</span> 👋</div>
+
+      <div class="kpi-grid">
+        <div class="kpi kc"><div class="kpi-glow"></div><div class="kl">Registered Voters</div><div class="kn">4,821</div><div class="ks">This election</div></div>
+        <div class="kpi kv"><div class="kpi-glow"></div><div class="kl">Votes Tallied</div><div class="kn">3,614</div><div class="ks">74.9% turnout</div></div>
+        <div class="kpi ka"><div class="kpi-glow"></div><div class="kl">Verified by Voters</div><div class="kn">612</div><div class="ks">16.9% verified</div></div>
+        <div class="kpi kg"><div class="kpi-glow"></div><div class="kl">Integrity Status</div><div class="kn">OK</div><div class="ks">All NIZKPoK valid</div></div>
+      </div>
+
+      <div class="g2">
+        <div class="panel">
+          <div class="ph"><div class="pt">Selene Protocol — Election Stages</div><div class="ptag">Fig. 3 · Paper</div></div>
+          <div class="proto-step"><div class="ps-num">01</div><div><div class="ps-t">Election Setup</div><div class="ps-d">Mix-net key generation, tracker creation &amp; shuffle, β commitment distribution.</div></div><span class="ps-badge done">Done</span></div>
+          <div class="proto-step"><div class="ps-num">02</div><div><div class="ps-t">Tracker Commitments (β)</div><div class="ps-d">Each voter receives β via email with credentials. Published to WBB.</div></div><span class="ps-badge done">Done</span></div>
+          <div class="proto-step"><div class="ps-num">03</div><div><div class="ps-t">Voting Period</div><div class="ps-d">Voters log in via CES, submit ballots. Plaintext held in CES Vote Database.</div></div><span class="ps-badge done">Closed</span></div>
+          <div class="proto-step"><div class="ps-num">04</div><div><div class="ps-t">Mixing &amp; Decryption</div><div class="ps-d">Verificatum mix-net shuffles (tracker, vote) tuples. Decrypt to plaintext pairs.</div></div><span class="ps-badge done">Done</span></div>
+          <div class="proto-step"><div class="ps-num">05</div><div><div class="ps-t">Tracker Notification (α)</div><div class="ps-d">Voters receive α commitment via email. Can recover tracker &amp; verify vote on WBB.</div></div><span class="ps-badge prog">Active</span></div>
+        </div>
+        <div class="panel">
+          <div class="ph"><div class="pt">Session activity</div><div class="ptag">Live</div></div>
+          <div class="act-list">
+            <div class="act-item"><div class="act-dot" style="background:var(--cyan)"></div><div><div class="act-t">Voter authenticated via CES</div><div class="act-m">Credential CES-2024-48291 · just now</div></div></div>
+            <div class="act-item"><div class="act-dot" style="background:var(--violet)"></div><div><div class="act-t">β commitment matched on WBB</div><div class="act-m">NIZKPoK verified · just now</div></div></div>
+            <div class="act-item"><div class="act-dot" style="background:var(--green)"></div><div><div class="act-t">α value received from Selene Layer</div><div class="act-m">Teller randomness collated · 2s ago</div></div></div>
+            <div class="act-item"><div class="act-dot" style="background:var(--muted)"></div><div><div class="act-t">Vote published to WBB</div><div class="act-m">SHA-256 hash committed to Quorum · 5s ago</div></div></div>
+            <div class="act-item"><div class="act-dot" style="background:var(--muted)"></div><div><div class="act-t">Quorum ledger hash verified</div><div class="act-m">4/4 nodes consensus · immutable · 8s ago</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="g3">
+        <div class="panel">
+          <div class="ph"><div class="pt">Vote verification rate</div><div class="ptag">Trial data</div></div>
+          <div>
+            <div class="vbar"><div class="vbar-top"><span class="vbar-n">Votes Cast</span><span class="vbar-v">3,614</span></div><div class="vbar-track"><div class="vbar-fill" style="width:0;background:var(--cyan)" data-w="100%"></div></div></div>
+            <div class="vbar"><div class="vbar-top"><span class="vbar-n">Voter-Verified</span><span class="vbar-v">612</span></div><div class="vbar-track"><div class="vbar-fill" style="width:0;background:var(--violet)" data-w="17%"></div></div></div>
+            <div class="vbar"><div class="vbar-top"><span class="vbar-n">NIZKPoK Valid</span><span class="vbar-v">3,614</span></div><div class="vbar-track"><div class="vbar-fill" style="width:0;background:var(--green)" data-w="100%"></div></div></div>
+            <div class="vbar"><div class="vbar-top"><span class="vbar-n">Anomalies Detected</span><span class="vbar-v">0</span></div><div class="vbar-track"><div class="vbar-fill" style="width:0;background:var(--red)" data-w="0%"></div></div></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="ph"><div class="pt">Architecture components</div><div class="ptag">Fig. 2 · Paper</div></div>
+          <div style="display:flex;flex-direction:column;gap:0;">
+            <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--edge);font-size:10px;"><span style="color:var(--muted)">CES Voting Web Service</span><span class="sbadge s-ok">Online</span></div>
+            <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--edge);font-size:10px;"><span style="color:var(--muted)">Selene Layer</span><span class="sbadge s-ok">Running</span></div>
+            <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--edge);font-size:10px;"><span style="color:var(--muted)">Verificatum Mix-net (4 nodes)</span><span class="sbadge s-ok">3/4 Active</span></div>
+            <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--edge);font-size:10px;"><span style="color:var(--muted)">Quorum DLT (4 nodes)</span><span class="sbadge s-ok">Consensus</span></div>
+            <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--edge);font-size:10px;"><span style="color:var(--muted)">Data Lake (AWS S3)</span><span class="sbadge s-ok">Synced</span></div>
+            <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:10px;"><span style="color:var(--muted)">Verification Web Service</span><span class="sbadge s-ok">Public</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="ph"><div class="pt">Election trials</div><div class="ptag">Section V · Paper</div></div>
+          <div style="display:flex;flex-direction:column;gap:0;">
+            <div style="padding:9px 0;border-bottom:1px solid var(--edge);font-size:10px;"><div style="color:var(--txt);font-weight:600;margin-bottom:2px;">In-house Civica Trial</div><div style="color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:9px;">Initial test · April 2019</div></div>
+            <div style="padding:9px 0;border-bottom:1px solid var(--edge);font-size:10px;"><div style="color:var(--txt);font-weight:600;margin-bottom:2px;">Surrey CS Dept Rep Election</div><div style="color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:9px;">Student reps · June 2019</div></div>
+            <div style="padding:9px 0;border-bottom:1px solid var(--edge);font-size:10px;"><div style="color:var(--txt);font-weight:600;margin-bottom:2px;">RCN West Midlands Rep</div><div style="color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:9px;">Binding commercial ballot · Aug 2019</div></div>
+            <div style="padding:9px 0;font-size:10px;"><div style="color:var(--txt);font-weight:600;margin-bottom:2px;">College of Podiatrists</div><div style="color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:9px;">Two reps elected · Oct 2019</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VERIFY VOTE ── -->
+    <div id="s-verify" class="dsec" style="display:none">
+      <div class="sec-ey">Individual Verifiability · Selene · WBB Cross-check</div>
+      <div class="sec-ti">Verify — <span>Real or Fraud?</span></div>
+
+      <div style="display:grid;grid-template-columns:1fr 320px;gap:16px;">
+
+        <!-- LEFT: main verification engine -->
+        <div>
+          <!-- Step 1: Enter tracker + expected vote -->
+          <div class="panel" style="margin-bottom:14px;">
+            <div class="ph">
+              <div class="pt">Step 1 — Enter your tracker &amp; expected vote</div>
+              <div class="ptag">From α · β email</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+              <div>
+                <label class="fl">Your Tracker Number (8-digit)</label>
+                <input class="fi" type="text" id="v-tracker" placeholder="e.g. 47829163" maxlength="8"
+                  style="font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:0.12em;"
+                  oninput="this.value=this.value.replace(/\D/g,'');resetResult()">
+              </div>
+              <div>
+                <label class="fl">Vote you cast</label>
+                <select class="fi" id="v-expected" onchange="resetResult()">
+                  <option value="">— Select —</option>
+                  <option value="YES">YES</option>
+                  <option value="NO">NO</option>
+                  <option value="ABSTAIN">ABSTAIN</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+              <div>
+                <label class="fl">Your β commitment (from email)</label>
+                <input class="fi" type="text" id="v-beta" placeholder="e.g. 3f9c8e1d2b47a..." style="font-family:'JetBrains Mono',monospace;font-size:11px;" oninput="resetResult()">
+              </div>
+              <div>
+                <label class="fl">Your α value (from post-election email)</label>
+                <input class="fi" type="text" id="v-alpha" placeholder="e.g. 7b2e4f1a9c..." style="font-family:'JetBrains Mono',monospace;font-size:11px;" oninput="resetResult()">
+              </div>
+            </div>
+            <button onclick="runVerification()" style="width:100%;padding:11px;background:linear-gradient(135deg,var(--cyan),var(--cyan2));border:none;border-radius:9px;color:#07090f;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.04em;box-shadow:0 4px 18px rgba(0,229,200,0.25);transition:all 0.2s;"
+              onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">
+              🔍 Run Verification Check
+            </button>
+          </div>
+
+          <!-- Step 2: verification in progress -->
+          <div id="v-checking" style="display:none;margin-bottom:14px;">
+            <div class="panel">
+              <div class="ph"><div class="pt">Verification in progress...</div><div class="ptag">WBB · Quorum · NIZKPoK</div></div>
+              <div id="v-steps-log" style="display:flex;flex-direction:column;gap:6px;"></div>
+            </div>
+          </div>
+
+          <!-- Step 3: result -->
+          <div id="v-result" style="display:none;margin-bottom:14px;">
+
+            <!-- REAL result -->
+            <div id="r-real" style="display:none;">
+              <div style="padding:20px;background:rgba(34,208,138,0.06);border:2px solid rgba(34,208,138,0.35);border-radius:14px;margin-bottom:14px;text-align:center;">
+                <div style="font-size:36px;margin-bottom:8px;">✅</div>
+                <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--green);margin-bottom:6px;">Vote Verified — AUTHENTIC</div>
+                <div style="font-size:12px;color:var(--muted);line-height:1.7;">Your tracker was found on the Web Bulletin Board and the vote recorded matches what you cast.<br>Your vote has been <strong style="color:var(--green);">correctly recorded and included in the tally.</strong></div>
+              </div>
+              <div class="panel" style="border-color:rgba(34,208,138,0.2);">
+                <div class="ph"><div class="pt">Verification breakdown</div><div class="ptag">All checks passed</div></div>
+                <div id="r-real-detail"></div>
+              </div>
+            </div>
+
+            <!-- FRAUD result -->
+            <div id="r-fraud" style="display:none;">
+              <div style="padding:20px;background:rgba(232,68,90,0.07);border:2px solid rgba(232,68,90,0.4);border-radius:14px;margin-bottom:14px;text-align:center;">
+                <div style="font-size:36px;margin-bottom:8px;">🚨</div>
+                <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--red);margin-bottom:6px;">FRAUD DETECTED</div>
+                <div style="font-size:12px;color:var(--muted);line-height:1.7;">A mismatch was found between your expected vote and what appears on the bulletin board.<br><strong style="color:var(--red);">Your vote may have been tampered with.</strong> Contact the election authority immediately.</div>
+              </div>
+              <div class="panel" style="border-color:rgba(232,68,90,0.2);">
+                <div class="ph"><div class="pt">Fraud analysis</div><div class="ptag">⚠ Integrity failure</div></div>
+                <div id="r-fraud-detail"></div>
+              </div>
+            </div>
+
+            <!-- NOT FOUND result -->
+            <div id="r-notfound" style="display:none;">
+              <div style="padding:20px;background:rgba(245,166,35,0.07);border:2px solid rgba(245,166,35,0.35);border-radius:14px;margin-bottom:14px;text-align:center;">
+                <div style="font-size:36px;margin-bottom:8px;">⚠️</div>
+                <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--amber);margin-bottom:6px;">Tracker Not Found</div>
+                <div style="font-size:12px;color:var(--muted);line-height:1.7;">Your tracker number was not found on the Web Bulletin Board.<br>Either the tracker is incorrect, or your vote was <strong style="color:var(--amber);">not recorded</strong>. Verify your α/β values and try again.</div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- WBB full list -->
+          <div class="panel">
+            <div class="ph"><div class="pt">Web Bulletin Board — All published (tracker, vote) pairs</div><div class="ptag">Post mix-net · Plaintext</div></div>
+            <div style="margin-bottom:10px;font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;">Click any row to autofill tracker above ↑</div>
+            <div id="wbb-full-list" style="display:flex;flex-direction:column;gap:5px;"></div>
+          </div>
+        </div>
+
+        <!-- RIGHT: guide + NIZKPoK checks -->
+        <div>
+          <div class="panel" style="margin-bottom:14px;">
+            <div class="ph"><div class="pt">How verification works</div><div class="ptag">Selene · Section II</div></div>
+            <div class="proto-step" style="background:transparent;border-color:rgba(0,229,200,0.15);">
+              <div class="ps-num">1</div><div><div class="ps-t">Enter your tracker</div><div class="ps-d">Recovered from your α/β pair. 8-digit number unique to you.</div></div>
+            </div>
+            <div class="proto-step" style="background:transparent;">
+              <div class="ps-num">2</div><div><div class="ps-t">WBB lookup</div><div class="ps-d">System searches the published (tracker, vote) list on the bulletin board.</div></div>
+            </div>
+            <div class="proto-step" style="background:transparent;">
+              <div class="ps-num">3</div><div><div class="ps-t">NIZKPoK check</div><div class="ps-d">Zero-knowledge proofs of shuffle and decryption are validated against Quorum hash.</div></div>
+            </div>
+            <div class="proto-step" style="background:transparent;border-color:rgba(34,208,138,0.2);">
+              <div class="ps-num">4</div><div><div class="ps-t">Match or mismatch</div><div class="ps-d">✅ Match = authentic. 🚨 Mismatch = fraud. ⚠ Not found = not recorded.</div></div>
+            </div>
+            <div style="margin-top:10px;padding:10px;background:var(--amb-d);border:1px solid rgba(245,166,35,0.2);border-radius:8px;font-size:10px;color:var(--muted);line-height:1.6;">
+              <strong style="color:var(--amber);">Try it:</strong> Enter tracker <code style="color:var(--cyan)">47829163</code> + vote <strong>YES</strong> → Authentic. Try <code style="color:var(--cyan)">47829163</code> + vote <strong>NO</strong> → Fraud. Try <code style="color:var(--cyan)">99999999</code> → Not found.
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="ph"><div class="pt">NIZKPoK proof status</div><div class="ptag">Quorum · On-chain</div></div>
+            <div style="display:flex;flex-direction:column;gap:7px;">
+              <div style="padding:9px;background:var(--surf2);border-radius:7px;border:1px solid var(--edge);">
+                <div style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:3px;">SHUFFLE PROOF — Tracker mix</div>
+                <div style="display:flex;align-items:center;gap:6px;"><span class="sbadge s-ok">✓ Valid</span><span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;">hash: a3f9c8e1...</span></div>
+              </div>
+              <div style="padding:9px;background:var(--surf2);border-radius:7px;border:1px solid var(--edge);">
+                <div style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:3px;">SHUFFLE PROOF — Vote mix</div>
+                <div style="display:flex;align-items:center;gap:6px;"><span class="sbadge s-ok">✓ Valid</span><span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;">hash: e4f2a9c7...</span></div>
+              </div>
+              <div style="padding:9px;background:var(--surf2);border-radius:7px;border:1px solid var(--edge);">
+                <div style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:3px;">DECRYPTION PROOF</div>
+                <div style="display:flex;align-items:center;gap:6px;"><span class="sbadge s-ok">✓ Valid</span><span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;">hash: 9b7c3e1d...</span></div>
+              </div>
+              <div style="padding:9px;background:var(--surf2);border-radius:7px;border:1px solid var(--edge);">
+                <div style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:3px;">TRACKER UNIQUENESS</div>
+                <div style="display:flex;align-items:center;gap:6px;"><span class="sbadge s-ok">✓ All unique</span><span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;">3,614 trackers</span></div>
+              </div>
+              <div style="padding:9px;background:var(--surf2);border-radius:7px;border:1px solid var(--edge);">
+                <div style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:3px;">QUORUM HASH INTEGRITY</div>
+                <div style="display:flex;align-items:center;gap:6px;"><span class="sbadge s-ok">✓ 4/4 match</span><span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;">consensus</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── MIX-NET ── -->
+    <div id="s-mixnet" class="dsec" style="display:none">
+      <div class="sec-ey">Verificatum Mix-net · Threshold ElGamal</div>
+      <div class="sec-ti">Mix-net <span>Nodes</span></div>
+
+      <div class="g4" style="margin-bottom:14px;">
+        <div class="panel">
+          <div class="ph"><div class="pt">Verificatum Node 1</div><span class="sbadge s-ok">Active</span></div>
+          <div class="nc-org">Civica Election Services · London DC1</div>
+          <div class="nc-stats">
+            <div class="nc-s"><span class="nc-sl">Operator</span><span class="nc-sv" style="color:var(--cyan)">CES</span></div>
+            <div class="nc-s"><span class="nc-sl">Key share</span><span class="nc-sv" style="color:var(--txt)">skT_1 (private)</span></div>
+            <div class="nc-s"><span class="nc-sl">Mix operations</span><span class="nc-sv" style="color:var(--green)">4 completed</span></div>
+            <div class="nc-s"><span class="nc-sl">Threshold</span><span class="nc-sv" style="color:var(--txt)">3 of 4 required</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="ph"><div class="pt">Verificatum Node 2</div><span class="sbadge s-ok">Active</span></div>
+          <div class="nc-org">Civica Election Services · London DC2</div>
+          <div class="nc-stats">
+            <div class="nc-s"><span class="nc-sl">Operator</span><span class="nc-sv" style="color:var(--cyan)">CES</span></div>
+            <div class="nc-s"><span class="nc-sl">Key share</span><span class="nc-sv" style="color:var(--txt)">skT_2 (private)</span></div>
+            <div class="nc-s"><span class="nc-sl">Mix operations</span><span class="nc-sv" style="color:var(--green)">4 completed</span></div>
+            <div class="nc-s"><span class="nc-sl">Threshold</span><span class="nc-sv" style="color:var(--txt)">3 of 4 required</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="ph"><div class="pt">Verificatum Node 3</div><span class="sbadge s-ok">Active</span></div>
+          <div class="nc-org">University of Surrey · Surrey Campus</div>
+          <div class="nc-stats">
+            <div class="nc-s"><span class="nc-sl">Operator</span><span class="nc-sv" style="color:var(--violet)">UoS</span></div>
+            <div class="nc-s"><span class="nc-sl">Key share</span><span class="nc-sv" style="color:var(--txt)">skT_3 (private)</span></div>
+            <div class="nc-s"><span class="nc-sl">Mix operations</span><span class="nc-sv" style="color:var(--green)">4 completed</span></div>
+            <div class="nc-s"><span class="nc-sl">Threshold</span><span class="nc-sv" style="color:var(--txt)">3 of 4 required</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="ph"><div class="pt">Verificatum Node 4</div><span class="sbadge s-warn">Degraded</span></div>
+          <div class="nc-org">University of Surrey · AWS EU-West</div>
+          <div class="nc-stats">
+            <div class="nc-s"><span class="nc-sl">Operator</span><span class="nc-sv" style="color:var(--violet)">UoS</span></div>
+            <div class="nc-s"><span class="nc-sl">Key share</span><span class="nc-sv" style="color:var(--txt)">skT_4 (private)</span></div>
+            <div class="nc-s"><span class="nc-sl">Mix operations</span><span class="nc-sv" style="color:var(--amber)">3 completed</span></div>
+            <div class="nc-s"><span class="nc-sl">Threshold</span><span class="nc-sv" style="color:var(--amber)">Node offline</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="g2">
+        <div class="panel">
+          <div class="ph"><div class="pt">Mix operations log</div><div class="ptag">Verificatum · ElGamal re-encryption</div></div>
+          <div class="proto-step"><div class="ps-num">1</div><div><div class="ps-t">Shuffle Encrypted Trackers</div><div class="ps-d">Random permutation π applied to {g^n_i}pk_T. NIZKPoK of correct shuffle produced.</div></div><span class="ps-badge done">✓ Verified</span></div>
+          <div class="proto-step"><div class="ps-num">2</div><div><div class="ps-t">Generate β Commitments (Randomise)</div><div class="ps-d">Each teller j generates r_{i,j} values. Combined to form β_i = pk_i^r · g^n_π(i).</div></div><span class="ps-badge done">✓ Verified</span></div>
+          <div class="proto-step"><div class="ps-num">3</div><div><div class="ps-t">Mix Encrypted Votes + Trackers</div><div class="ps-d">Tuples ({g^n_π(i)}pkT, {Vote_i}pkT) shuffled again. Final plaintext (tracker, vote) pairs.</div></div><span class="ps-badge done">✓ Verified</span></div>
+          <div class="proto-step"><div class="ps-num">4</div><div><div class="ps-t">Generate α Values (Randoms)</div><div class="ps-d">Each teller shares g^r_{i,j} with Selene Layer. α_i computed and sent to voters by CES.</div></div><span class="ps-badge prog">In progress</span></div>
+        </div>
+        <div class="panel">
+          <div class="ph"><div class="pt">Cryptographic parameters</div><div class="ptag">Election key</div></div>
+          <div style="display:flex;flex-direction:column;gap:0;">
+            <div style="padding:8px 0;border-bottom:1px solid var(--edge);font-size:10px;display:flex;justify-content:space-between;"><span style="color:var(--muted)">Key length</span><span style="font-family:'JetBrains Mono',monospace;color:var(--txt)">3027 bits</span></div>
+            <div style="padding:8px 0;border-bottom:1px solid var(--edge);font-size:10px;display:flex;justify-content:space-between;"><span style="color:var(--muted)">Encryption scheme</span><span style="font-family:'JetBrains Mono',monospace;color:var(--cyan)">ElGamal (k,t)-threshold</span></div>
+            <div style="padding:8px 0;border-bottom:1px solid var(--edge);font-size:10px;display:flex;justify-content:space-between;"><span style="color:var(--muted)">Cyclic group G, order p</span><span style="font-family:'JetBrains Mono',monospace;color:var(--txt)">2048-bit prime</span></div>
+            <div style="padding:8px 0;border-bottom:1px solid var(--edge);font-size:10px;display:flex;justify-content:space-between;"><span style="color:var(--muted)">Signature algorithm</span><span style="font-family:'JetBrains Mono',monospace;color:var(--txt)">DSA (NIST FIPS 186-5)</span></div>
+            <div style="padding:8px 0;border-bottom:1px solid var(--edge);font-size:10px;display:flex;justify-content:space-between;"><span style="color:var(--muted)">Tracker format</span><span style="font-family:'JetBrains Mono',monospace;color:var(--cyan)">8-digit unique numbers</span></div>
+            <div style="padding:8px 0;border-bottom:1px solid var(--edge);font-size:10px;display:flex;justify-content:space-between;"><span style="color:var(--muted)">Mix-net implementation</span><span style="font-family:'JetBrains Mono',monospace;color:var(--txt)">Verificatum (open source)</span></div>
+            <div style="padding:8px 0;font-size:10px;display:flex;justify-content:space-between;"><span style="color:var(--muted)">Data size (1000 voters)</span><span style="font-family:'JetBrains Mono',monospace;color:var(--txt)">~4 MB per CSV file</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── WEB BULLETIN BOARD ── -->
+    <div id="s-wbb" class="dsec" style="display:none">
+      <div class="sec-ey">Web Bulletin Board · Quorum DLT · Append-only</div>
+      <div class="sec-ti">Bulletin <span>Board</span></div>
+
+      <div class="g4" style="margin-bottom:14px;">
+        <div class="panel">
+          <div class="ph"><div class="pt">Quorum Node Status</div><div class="ptag">DLT Network</div></div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="padding:8px;background:var(--surf2);border-radius:7px;border:1px solid var(--edge);display:flex;justify-content:space-between;align-items:center;"><span style="font-size:10px;color:var(--muted);">CES Node 1 · London</span><span class="sbadge s-ok">Consensus</span></div>
+            <div style="padding:8px;background:var(--surf2);border-radius:7px;border:1px solid var(--edge);display:flex;justify-content:space-between;align-items:center;"><span style="font-size:10px;color:var(--muted);">CES Node 2 · London</span><span class="sbadge s-ok">Consensus</span></div>
+            <div style="padding:8px;background:var(--surf2);border-radius:7px;border:1px solid var(--edge);display:flex;justify-content:space-between;align-items:center;"><span style="font-size:10px;color:var(--muted);">UoS Node 1 · Surrey</span><span class="sbadge s-ok">Consensus</span></div>
+            <div style="padding:8px;background:var(--surf2);border-radius:7px;border:1px solid var(--edge);display:flex;justify-content:space-between;align-items:center;"><span style="font-size:10px;color:var(--muted);">UoS Node 2 · AWS</span><span class="sbadge s-ok">Consensus</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="ph"><div class="pt">Published files</div><div class="ptag">Data Lake · SHA-256</div></div>
+          <div style="display:flex;flex-direction:column;gap:0;">
+            <div style="padding:7px 0;border-bottom:1px solid var(--edge);font-size:10px;display:flex;justify-content:space-between;"><span style="color:var(--muted)">Election public key</span><span class="sbadge s-ok">Committed</span></div>
+            <div style="padding:7px 0;border-bottom:1px solid var(--edge);font-size:10px;display:flex;justify-content:space-between;"><span style="color:var(--muted)">Encrypted trackers</span><span class="sbadge s-ok">Committed</span></div>
+            <div style="padding:7px 0;border-bottom:1px solid var(--edge);font-size:10px;display:flex;justify-content:space-between;"><span style="color:var(--muted)">β commitments</span><span class="sbadge s-ok">Committed</span></div>
+            <div style="padding:7px 0;border-bottom:1px solid var(--edge);font-size:10px;display:flex;justify-content:space-between;"><span style="color:var(--muted)">Shuffle proofs (NIZKPoK)</span><span class="sbadge s-ok">Committed</span></div>
+            <div style="padding:7px 0;border-bottom:1px solid var(--edge);font-size:10px;display:flex;justify-content:space-between;"><span style="color:var(--muted)">Plaintext (tracker, vote) pairs</span><span class="sbadge s-ok">Committed</span></div>
+            <div style="padding:7px 0;font-size:10px;display:flex;justify-content:space-between;"><span style="color:var(--muted)">α values (voter notification)</span><span class="sbadge s-pending">Publishing</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ph"><div class="pt">Recent WBB entries — SHA-256 hashes committed to Quorum</div><div class="ptag">Append-only · Immutable</div></div>
+        <div id="wbb-entries"></div>
+      </div>
+    </div>
+
+    <!-- ── ROADMAP ── -->
+    <div id="s-roadmap" class="dsec" style="display:none">
+      <div class="sec-ey">Section I-A · Paper · Incremental Deployment</div>
+      <div class="sec-ti">Security <span>Roadmap</span></div>
+
+      <div class="g2">
+        <div class="panel">
+          <div class="ph"><div class="pt">5-Step roadmap to full E2E verifiability</div><div class="ptag">Section I-A · Paper</div></div>
+          <div class="road-item"><div class="road-step rs-curr">1</div><div><div class="road-t">Independent Verifiability (VMV — This paper)</div><div class="road-d">Selene verifiability layer deployed externally. Not trusted for privacy. Enables voters to verify recorded-as-cast. CES unchanged. ← <em style="color:var(--cyan)">Current step</em></div></div></div>
+          <div class="road-item"><div class="road-step rs-next">2</div><div><div class="road-t">Casting Encrypted Ballots</div><div class="road-d">Voting front-end collects encrypted ballots directly. CES no longer sees plaintext at vote time. Requires client-side JS or mobile app.</div></div></div>
+          <div class="road-item"><div class="road-step rs-next">3</div><div><div class="road-t">Voter Credentials</div><div class="road-d">Generate &amp; store voter key pairs in system. Voters can recover credentials to verify independently without relying on VMV infrastructure.</div></div></div>
+          <div class="road-item"><div class="road-step rs-next">4</div><div><div class="road-t">Voter Self-Registration</div><div class="road-d">Voters generate and register their own cryptographic credentials. Risk: disenfranchisement from credential loss. Similar to electronic wallet.</div></div></div>
+          <div class="road-item"><div class="road-step rs-next">5</div><div><div class="road-t">Coercion Mitigation</div><div class="road-d">Fake α values, deniable channels. Voters aware &amp; in control of crypto credentials. Full end-to-end security achieved. Civitas-style credentials.</div></div></div>
+        </div>
+        <div>
+          <div class="panel" style="margin-bottom:14px;">
+            <div class="ph"><div class="pt">Security properties</div><div class="ptag">Fig. 4 · Paper</div></div>
+            <div style="display:flex;flex-direction:column;gap:7px;">
+              <div style="padding:10px;background:var(--surf2);border-radius:8px;border:1px solid rgba(34,208,138,0.15);">
+                <div style="font-size:10px;font-weight:600;color:var(--green);margin-bottom:3px;">✓ Individual Verifiability</div>
+                <div style="font-size:10px;color:var(--muted);">Provided when both CES and VMV are honest. Voters can confirm vote recorded-as-cast using tracker.</div>
+              </div>
+              <div style="padding:10px;background:var(--surf2);border-radius:8px;border:1px solid rgba(0,229,200,0.12);">
+                <div style="font-size:10px;font-weight:600;color:var(--cyan);margin-bottom:3px;">✓ Universal Verifiability</div>
+                <div style="font-size:10px;color:var(--muted);">Anyone can verify NIZKPoK proofs of shuffling and decryption. Tally correctness independently auditable.</div>
+              </div>
+              <div style="padding:10px;background:var(--surf2);border-radius:8px;border:1px solid rgba(245,166,35,0.12);">
+                <div style="font-size:10px;font-weight:600;color:var(--amber);margin-bottom:3px;">⚠ Ballot Privacy</div>
+                <div style="font-size:10px;color:var(--muted);">Handled by CES business processes. VMV is NOT trusted for privacy. End-to-end encryption is future work.</div>
+              </div>
+              <div style="padding:10px;background:var(--surf2);border-radius:8px;border:1px solid rgba(232,68,90,0.12);">
+                <div style="font-size:10px;font-weight:600;color:var(--red);margin-bottom:3px;">✗ Coercion Mitigation</div>
+                <div style="font-size:10px;color:var(--muted);">Not implemented in Step 1. Fake α generation and deniable channels reserved for Step 5 of roadmap.</div>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="ph"><div class="pt">Distributed trust model</div><div class="ptag">Section IV-E</div></div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.8;">
+              <div style="margin-bottom:8px;">Mix-net: <strong style="color:var(--txt)">2 CES + 2 UoS nodes</strong> — neither controls threshold alone.</div>
+              <div style="margin-bottom:8px;">Quorum DLT: <strong style="color:var(--txt)">2 CES + 2 UoS nodes</strong> — consensus requires 3/4.</div>
+              <div>Result: <strong style="color:var(--cyan);">"Dishonest but cautious"</strong> CES cannot alter election undetectably — detection risk outweighs benefit.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Logout Modal -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <div class="modal-ico">🔐</div>
+      <div class="modal-t">Sign out?</div>
+      <div class="modal-d">Your verification session will be terminated. All cryptographic session data will be cleared. You can re-authenticate at any time.</div>
+      <div class="modal-btns">
+        <button class="btn-stay" onclick="hideModal()">Stay signed in</button>
+        <button class="btn-exit" onclick="doLogout()">Sign out</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toastEl"><div class="toast-dot"></div><span id="toastMsg">Done</span></div>
+
+<script>
+// ── Role switch ──
+function switchRole(r, el) {
+  document.querySelectorAll('.rtab').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  ['voter','admin','auditor'].forEach(id => {
+    document.getElementById('f-'+id).style.display = id === r ? '' : 'none';
+  });
+}
+
+// ── Login ──
+var lmsgs = [
+  'Authenticating credentials...',
+  'Verifying β commitment on WBB...',
+  'Fetching α value from Selene Layer...',
+  'Loading verification dashboard...'
+];
+function doLogin() {
+  var name = (document.getElementById('inp-name').value.trim()) || 'Voter';
+  var initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  show('pg-loading');
+  document.getElementById('load-fill').style.width = '0%';
+  var i = 0;
+  var iv = setInterval(() => {
+    i++;
+    if (i < lmsgs.length) document.getElementById('load-msg').textContent = lmsgs[i];
+    document.getElementById('load-fill').style.width = ((i/lmsgs.length)*100)+'%';
+    if (i >= lmsgs.length-1) {
+      clearInterval(iv);
+      document.getElementById('load-fill').style.width = '100%';
+      setTimeout(() => {
+        show('pg-dash');
+        document.getElementById('disp-name').textContent = name.split(' ')[0];
+        document.getElementById('tb-av').textContent = initials;
+        buildBars(); buildWBB(); buildWBBFull();
+        showToast('Welcome, ' + name + ' — Session secured ✓');
+      }, 500);
+    }
+  }, 650);
+}
+
+function doLogout() {
+  hideModal();
+  show('pg-loading');
+  document.getElementById('load-msg').textContent = 'Terminating session...';
+  document.getElementById('load-fill').style.width = '0%';
+  setTimeout(() => { document.getElementById('load-fill').style.width = '100%'; }, 200);
+  setTimeout(() => { show('pg-login'); showToast('Logged out securely'); }, 1100);
+}
+
+// ── Section switch ──
+function switchSec(name) {
+  document.querySelectorAll('.dsec').forEach(s => s.style.display = 'none');
+  document.getElementById('s-'+name).style.display = '';
+  document.querySelectorAll('.tnav').forEach(b => b.classList.remove('on'));
+  const map = {overview:'Overview',verify:'Verify Vote',mixnet:'Mix-net',wbb:'Bulletin Board',roadmap:'Roadmap'};
+  document.querySelectorAll('.tnav').forEach(b => { if (b.textContent.trim() === map[name]) b.classList.add('on'); });
+  document.querySelector('.dbody').scrollTop = 0;
+  if (name === 'overview') buildBars();
+}
+
+function show(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+}
+function showModal() { document.getElementById('modal').classList.add('show'); }
+function hideModal() { document.getElementById('modal').classList.remove('show'); }
+function showToast(msg) {
+  var el = document.getElementById('toastEl');
+  document.getElementById('toastMsg').textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+// ── Build bars ──
+function buildBars() {
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.vbar-fill[data-w]').forEach(el => el.style.width = el.dataset.w);
+  });
+}
+
+// ── Build WBB entries ──
+var wbbData = [
+  {hash:'a3f9c8e1d2b47...',file:'election_public_key.csv',time:'Setup',color:'var(--cyan)'},
+  {hash:'7b2e4f1a9c8d3...',file:'encrypted_trackers.csv',time:'Setup',color:'var(--violet)'},
+  {hash:'c1d8b3e7a2f49...',file:'beta_commitments.csv',time:'Setup',color:'var(--violet)'},
+  {hash:'e4f2a9c7b1d38...',file:'shuffle_proof_01.nzk',time:'Voting',color:'var(--amber)'},
+  {hash:'9b7c3e1d8a2f4...',file:'plaintext_tracker_vote_pairs.csv',time:'Verif.',color:'var(--green)'},
+  {hash:'2f8e1a4c9b7d3...',file:'decryption_proofs.nzk',time:'Verif.',color:'var(--green)'},
+];
+function buildWBB() {
+  var c = document.getElementById('wbb-entries');
+  if (!c) return;
+  c.innerHTML = '';
+  wbbData.forEach(d => {
+    c.innerHTML += `<div class="wbb-entry">
+      <div class="wbb-dot" style="background:${d.color};margin-top:4px;flex-shrink:0;width:7px;height:7px;border-radius:50%;"></div>
+      <div class="wbb-hash">${d.hash}<br><span style="color:var(--muted)">${d.file}</span></div>
+      <div class="wbb-meta">${d.time}<br><span class="sbadge s-ok">✓</span></div>
+    </div>`;
+  });
+}
+
+// ── WBB database (simulated from paper) ──
+var wbbDB = [
+  {tracker:'47829163', vote:'YES',  beta:'3f9c8e1d2b47a092', alpha:'7b2e4f1a9c8d3e01', valid:true},
+  {tracker:'82934710', vote:'NO',   beta:'9c1d7e3b4a82f051', alpha:'2a9f1c8e4d7b3e02', valid:true},
+  {tracker:'19283746', vote:'YES',  beta:'4b8e2f9a1c7d3e06', alpha:'6c3a8e1d9f4b2e03', valid:true},
+  {tracker:'63748291', vote:'YES',  beta:'7a1c9e4b2d8f3e08', alpha:'1e8c4a7f9b2d3e04', valid:true},
+  {tracker:'82740193', vote:'NO',   beta:'2e9b7c1d4a8f3e09', alpha:'4d7b1c9e2a8f3e05', valid:true},
+  {tracker:'37492810', vote:'YES',  beta:'8f3c1b9e4d7a2e10', alpha:'9b4c7e1a3f8d2e06', valid:true},
+  {tracker:'10293847', vote:'ABSTAIN', beta:'5d2b8e7c1a4f3e11', alpha:'3f9a2c8e4b7d1e07', valid:true},
+  {tracker:'56473829', vote:'NO',   beta:'1c4e9b7a3d8f2e12', alpha:'8d2e4c1b9a7f3e08', valid:true},
+  {tracker:'74829301', vote:'YES',  beta:'6a8f3d1c9b4e7e13', alpha:'2c7b9a4e1f8d3e09', valid:true},
+  {tracker:'29384756', vote:'NO',   beta:'3b1e8c4d7a9f2e14', alpha:'7a4d2c1e9b8f3e10', valid:true},
+];
+
+function buildWBBFull() {
+  var c = document.getElementById('wbb-full-list');
+  if (!c) return;
+  c.innerHTML = '';
+  wbbDB.forEach((r,i) => {
+    var color = r.vote==='YES' ? 'var(--green)' : r.vote==='NO' ? 'var(--red)' : 'var(--amber)';
+    c.innerHTML += `<div onclick="autofill('${r.tracker}','${r.vote}')"
+      style="display:flex;align-items:center;gap:10px;padding:9px 11px;
+      background:var(--surf2);border:1px solid var(--edge);border-radius:7px;
+      cursor:pointer;transition:border-color 0.2s;"
+      id="wbb-row-${i}"
+      onmouseover="this.style.borderColor='rgba(0,229,200,0.25)'"
+      onmouseout="this.style.borderColor='var(--edge)'">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--cyan);flex:1;letter-spacing:0.06em;">${r.tracker}</span>
+      <span style="font-size:12px;font-weight:700;color:${color};min-width:60px;text-align:right;">${r.vote}</span>
+      <span class="sbadge s-ok" style="font-size:8px;">On WBB</span>
+    </div>`;
+  });
+}
+
+function autofill(tracker, vote) {
+  document.getElementById('v-tracker').value = tracker;
+  document.getElementById('v-expected').value = vote;
+  resetResult();
+  showToast('Autofilled tracker ' + tracker + ' — click Verify');
+}
+
+function resetResult() {
+  document.getElementById('v-result').style.display = 'none';
+  document.getElementById('v-checking').style.display = 'none';
+  ['r-real','r-fraud','r-notfound'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  // reset WBB row highlights
+  wbbDB.forEach((_,i) => {
+    var row = document.getElementById('wbb-row-'+i);
+    if (row) { row.style.background = 'var(--surf2)'; row.style.borderColor = 'var(--edge)'; }
+  });
+}
+
+function runVerification() {
+  var tracker  = document.getElementById('v-tracker').value.trim();
+  var expected = document.getElementById('v-expected').value;
+  var beta     = document.getElementById('v-beta').value.trim();
+  var alpha    = document.getElementById('v-alpha').value.trim();
+
+  if (!tracker) { showToast('⚠ Enter your tracker number first'); return; }
+  if (!expected) { showToast('⚠ Select the vote you cast'); return; }
+
+  resetResult();
+  document.getElementById('v-checking').style.display = '';
+
+  var steps = [
+    {msg:'Searching Web Bulletin Board for tracker ' + tracker + '...', delay:400},
+    {msg:'Validating NIZKPoK shuffle proofs on Quorum...', delay:900},
+    {msg:'Verifying SHA-256 hash integrity (4/4 nodes)...', delay:1400},
+    {msg:'Cross-checking vote against expected selection...', delay:1900},
+  ];
+
+  var log = document.getElementById('v-steps-log');
+  log.innerHTML = '';
+
+  steps.forEach((s,i) => {
+    setTimeout(() => {
+      log.innerHTML += `<div style="display:flex;align-items:center;gap:8px;padding:7px 9px;
+        background:var(--surf2);border-radius:6px;border:1px solid var(--edge);
+        font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted);">
+        <span style="color:var(--cyan)">→</span> ${s.msg}
+      </div>`;
+    }, s.delay);
+  });
+
+  setTimeout(() => {
+    document.getElementById('v-checking').style.display = 'none';
+    document.getElementById('v-result').style.display = '';
+
+    var found = wbbDB.findIndex(r => r.tracker === tracker);
+
+    if (found === -1) {
+      // NOT FOUND
+      document.getElementById('r-notfound').style.display = '';
+      showToast('⚠ Tracker ' + tracker + ' not found on WBB');
+    } else {
+      var record = wbbDB[found];
+      // Highlight WBB row
+      var row = document.getElementById('wbb-row-'+found);
+      if (row) {
+        row.style.background = record.vote === expected
+          ? 'rgba(34,208,138,0.07)' : 'rgba(232,68,90,0.07)';
+        row.style.borderColor = record.vote === expected
+          ? 'rgba(34,208,138,0.35)' : 'rgba(232,68,90,0.35)';
+        row.scrollIntoView({behavior:'smooth',block:'nearest'});
+      }
+
+      if (record.vote === expected) {
+        // REAL / AUTHENTIC
+        document.getElementById('r-real').style.display = '';
+        var d = document.getElementById('r-real-detail');
+        d.innerHTML = `
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <div style="padding:9px 11px;background:var(--surf2);border-radius:7px;border:1px solid rgba(34,208,138,0.15);display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:10px;color:var(--muted);">Tracker on WBB</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan);">${tracker}</span>
+            </div>
+            <div style="padding:9px 11px;background:var(--surf2);border-radius:7px;border:1px solid rgba(34,208,138,0.15);display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:10px;color:var(--muted);">Vote recorded on WBB</span>
+              <span style="font-size:13px;font-weight:700;color:var(--green);">${record.vote}</span>
+            </div>
+            <div style="padding:9px 11px;background:var(--surf2);border-radius:7px;border:1px solid rgba(34,208,138,0.15);display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:10px;color:var(--muted);">Vote you expected</span>
+              <span style="font-size:13px;font-weight:700;color:var(--green);">${expected}</span>
+            </div>
+            <div style="padding:9px 11px;background:var(--surf2);border-radius:7px;border:1px solid rgba(34,208,138,0.15);display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:10px;color:var(--muted);">NIZKPoK proof</span>
+              <span class="sbadge s-ok">✓ Valid</span>
+            </div>
+            <div style="padding:9px 11px;background:var(--surf2);border-radius:7px;border:1px solid rgba(34,208,138,0.15);display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:10px;color:var(--muted);">Quorum hash check</span>
+              <span class="sbadge s-ok">✓ 4/4 match</span>
+            </div>
+            <div style="padding:9px 11px;background:var(--surf2);border-radius:7px;border:1px solid rgba(34,208,138,0.15);display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:10px;color:var(--muted);">Verdict</span>
+              <span style="font-size:11px;font-weight:700;color:var(--green);">AUTHENTIC — Recorded as Cast ✅</span>
+            </div>
+          </div>`;
+        showToast('✅ Vote verified — AUTHENTIC');
+      } else {
+        // FRAUD
+        document.getElementById('r-fraud').style.display = '';
+        var d2 = document.getElementById('r-fraud-detail');
+        d2.innerHTML = `
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <div style="padding:9px 11px;background:var(--surf2);border-radius:7px;border:1px solid rgba(232,68,90,0.2);display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:10px;color:var(--muted);">Tracker on WBB</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan);">${tracker}</span>
+            </div>
+            <div style="padding:9px 11px;background:rgba(232,68,90,0.06);border-radius:7px;border:1px solid rgba(232,68,90,0.3);display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:10px;color:var(--muted);">Vote recorded on WBB</span>
+              <span style="font-size:13px;font-weight:700;color:var(--red);">${record.vote}</span>
+            </div>
+            <div style="padding:9px 11px;background:rgba(232,68,90,0.06);border-radius:7px;border:1px solid rgba(232,68,90,0.3);display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:10px;color:var(--muted);">Vote you expected</span>
+              <span style="font-size:13px;font-weight:700;color:var(--amber);">${expected}</span>
+            </div>
+            <div style="padding:9px 11px;background:rgba(232,68,90,0.06);border-radius:7px;border:1px solid rgba(232,68,90,0.3);display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:10px;color:var(--muted);">Mismatch detected</span>
+              <span class="sbadge s-err">🚨 ${record.vote} ≠ ${expected}</span>
+            </div>
+            <div style="padding:9px 11px;background:var(--surf2);border-radius:7px;border:1px solid rgba(232,68,90,0.2);display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:10px;color:var(--muted);">Quorum hash check</span>
+              <span class="sbadge s-ok">✓ Hash intact</span>
+            </div>
+            <div style="padding:10px;background:rgba(232,68,90,0.06);border:1px solid rgba(232,68,90,0.2);border-radius:7px;font-size:10px;color:var(--muted);line-height:1.6;margin-top:4px;">
+              <strong style="color:var(--red);">Action required:</strong> Report this discrepancy to the Election Authority immediately. The CES "dishonest but cautious" adversary model (Section IV) means this detection is sufficient deterrent — but must be escalated.
+            </div>
+          </div>`;
+        showToast('🚨 FRAUD DETECTED — vote mismatch!');
+      }
+    }
+  }, 2200);
+}
+
+</script>
+</body>
+</html>
